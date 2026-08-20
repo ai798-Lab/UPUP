@@ -885,6 +885,185 @@ def score_audit(ev, rubric=None):
     return finalize(items, lane="audit")
 
 
+
+# ── meta lane：一对 title 与 description ───────────────────────────────
+CJK_RE = re.compile(r'[\u4e00-\u9fff]')
+
+
+def _mlen(s):
+    """字符数，CJK 按 2 计。与 audit lane 的 I1 同一套计法。"""
+    return sum(2 if CJK_RE.match(c) else 1 for c in (s or ""))
+
+
+HOOK_PATTERNS = {
+    "带单位数值": re.compile(
+        r'(?i)\d+\s*(秒|分钟|小时|天|次|个|条|页|张|人|%|percent|sec|second|min|minute|hour|day|x\b)'),
+    "价格或币种": re.compile(r'(?i)(\$|¥|€|£|\d+\s*(美元|元|刀)|\b(usd|eur|cny|rmb)\b|/\s*(mo|month|月))'),
+    "免费程度": re.compile(
+        r'(?i)(免费|不用注册|无需注册|不用登录|\bfree\b|no sign.?up|no account|no credit card)'),
+    "产出物或支持范围": re.compile(
+        r'(?i)(导出|下载|支持|兼容|\b(mp4|gif|png|jpg|pdf|csv|svg|webp|json)\b|'
+        r'\b(instagram|linkedin|tiktok|youtube|twitter|facebook|x)\b|export|download)'),
+}
+
+VERB_RE = re.compile(
+    r'(?i)(生成|制作|转换|检测|分析|创建|上传|导出|下载|排期|发布|写|做|查|试|'
+    r'\bgenerate|\bcreate|\bconvert|\bmake|\bbuild|\bwrite|\bcheck|\bschedule|\bpublish|\bturn\b)')
+
+TOOL_VERB_RE = re.compile(
+    r'(?i)(生成器|转换器|检测器|分析器|编辑器|生成|转换|检测|分析|压缩|裁剪|去除|'
+    r'\bgenerator\b|\bconverter\b|\bchecker\b|\banalyzer\b|\beditor\b|\bmaker\b|'
+    r'\bcreator\b|\bremover\b|\bcompressor\b|\bdetector\b)')
+
+AUDIENCE_RE = re.compile(
+    r'(?i)(给|为|适合|面向|团队|个人|创作者|开发者|商家|新手|专业|运营|营销|设计师|'
+    r'\bfor\b|\bteams?\b|\bcreators?\b|\bdevelopers?\b|\bmarketers?\b|\bagencies\b|'
+    r'\bbeginners?\b|\bfreelancers?\b|\bbusinesses\b)')
+
+PAGE_TYPES = ("home", "tool", "pricing")
+
+
+def score_meta(title, description, keyword="", page_type=None, peers=None, rubric=None):
+    """吃一对 title 与 description。peers 是同组其他页 [{title, description, url}]，用于查唯一性。"""
+    rubric = rubric or load_rubric()
+    items = []
+    title = (title or "").strip()
+    desc = (description or "").strip()
+    peers = peers or []
+    tl, dl = _mlen(title), _mlen(desc)
+
+    # MG1 门槛
+    ok_gate = bool(title) and bool(desc) and tl >= 6 and dl >= 20
+    items.append(result(rubric, "MG1", score=1 if ok_gate else 0,
+                        detail="title %d 字符，description %d 字符" % (tl, dl),
+                        evidence=[{"title": title[:120], "description": desc[:200]}]))
+
+    # M1 title 长度
+    if not title:
+        s = 0
+    elif 15 <= tl <= 60:
+        s = 3
+    elif 10 <= tl < 15 or 60 < tl <= 70:
+        s = 2
+    else:
+        s = 1
+    items.append(result(rubric, "M1", score=s, detail="title 长度 %d（15 到 60 为宜）" % tl))
+
+    # M2 description 长度
+    if not desc:
+        s = 0
+    elif 70 <= dl <= 155:
+        s = 3
+    elif 50 <= dl < 70 or 155 < dl <= 175:
+        s = 2
+    else:
+        s = 1
+    items.append(result(rubric, "M2", score=s, detail="description 长度 %d（70 到 155 为宜）" % dl))
+
+    # M3 主词在 title 前半
+    kw_terms = sorted(terms_of(keyword)) if keyword else []
+    if not kw_terms:
+        items.append(result(rubric, "M3", observed=False,
+                            reason="没给主词，无法判断它在不在 title 前半"))
+    elif not title:
+        items.append(result(rubric, "M3", score=0, detail="没有 title"))
+    else:
+        low = title.lower()
+        hits = [low.find(t.lower()) for t in kw_terms if t.lower() in low]
+        if not hits:
+            items.append(result(rubric, "M3", score=0,
+                                detail="title 里找不到主词 %s" % "、".join(kw_terms[:4]),
+                                evidence=[{"title": title[:120], "keyword_terms": kw_terms[:6]}]))
+        else:
+            rel = _mlen(title[:min(hits)]) / max(tl, 1)
+            s = 3 if rel <= 1 / 3 else (2 if rel <= 0.5 else 1)
+            items.append(result(rubric, "M3", score=s,
+                                detail="主词首次出现在 title 的第 %d%% 处" % round(rel * 100),
+                                evidence=[{"keyword_terms": kw_terms[:6]}]))
+
+    # M4 description 不复述 title
+    a, b = terms_of(title), terms_of(desc)
+    if not a or not b:
+        items.append(result(rubric, "M4", observed=False, reason="title 或 description 取不到实义词"))
+    else:
+        j = len(a & b) / len(a | b)
+        s = 3 if j <= 0.30 else (2 if j <= 0.50 else (1 if j <= 0.70 else 0))
+        items.append(result(rubric, "M4", score=s,
+                            detail="与 title 的实义词重叠度 %.2f（越低越好）" % j,
+                            evidence=[{"shared_terms": sorted(a & b)[:8]}]))
+
+    # M5 具体钩子
+    if not desc:
+        items.append(result(rubric, "M5", score=0, detail="没有 description"))
+    else:
+        hit = [k for k, rx in HOOK_PATTERNS.items() if rx.search(desc)]
+        if len(hit) >= 2:
+            s = 3
+        elif len(hit) == 1:
+            s = 2
+        elif VERB_RE.search(desc):
+            s = 1
+        else:
+            s = 0
+        items.append(result(rubric, "M5", score=s,
+                            detail="命中 %d 类具体信息%s" % (
+                                len(hit), ("：" + "、".join(hit)) if hit else ""),
+                            evidence=[{"hooks": hit}]))
+
+    # M6 页型必答项
+    if page_type not in PAGE_TYPES:
+        items.append(result(rubric, "M6", observed=False,
+                            reason="没给页型（home / tool / pricing），无法判断必答项"))
+    else:
+        blob = title + " " + desc
+        if page_type == "home":
+            need = {"品类词": bool(kw_terms) and any(t.lower() in blob.lower() for t in kw_terms),
+                    "人群或用途": bool(AUDIENCE_RE.search(blob))}
+        elif page_type == "tool":
+            need = {"功能动词": bool(TOOL_VERB_RE.search(blob)),
+                    "说清输入或产出": bool(HOOK_PATTERNS["产出物或支持范围"].search(blob)
+                                           or HOOK_PATTERNS["带单位数值"].search(blob))}
+        else:
+            need = {"价格数字": bool(re.search(r'\d', blob)),
+                    "币种": bool(HOOK_PATTERNS["价格或币种"].search(blob))}
+        got = sum(1 for v in need.values() if v)
+        s = {2: 3, 1: 2, 0: 0}[got] if len(need) == 2 else (3 if got == len(need) else 1)
+        miss = [k for k, v in need.items() if not v]
+        items.append(result(rubric, "M6", score=s,
+                            detail="页型 %s：%s" % (
+                                page_type, ("都齐了" if not miss else "缺 " + "、".join(miss))),
+                            evidence=[{"page_type": page_type, "missing": miss}]))
+
+    # M7 同组唯一
+    if not peers:
+        items.append(result(rubric, "M7", observed=False, reason="只给了一页，没有同组可比"))
+    else:
+        dup_t = [p.get("url") for p in peers if title and p.get("title") == title]
+        dup_d = [p.get("url") for p in peers if desc and p.get("description") == desc]
+        if len(dup_t) >= 2:
+            s = 0
+        elif len(dup_t) == 1:
+            s = 1
+        elif dup_d:
+            s = 2
+        else:
+            s = 3
+        items.append(result(rubric, "M7", score=s,
+                            detail="title 与 %d 页重复，description 与 %d 页重复" % (
+                                len(dup_t), len(dup_d)),
+                            evidence=[{"title_dup": dup_t[:3], "desc_dup": dup_d[:3]}]))
+
+    # C4 无营销腔（与 audit / write 共用同一份词表）
+    hits = []
+    for m in MARKETING.finditer(title + " " + desc):
+        hits.append({"phrase": m.group(0)})
+    n = len(hits)
+    s = 3 if n == 0 else (2 if n == 1 else (1 if n <= 3 else 0))
+    items.append(result(rubric, "C4", score=s,
+                        detail="命中营销套话 %d 处" % n, evidence=hits[:5]))
+
+    return finalize(items, lane="meta")
+
 # ── 汇总 ───────────────────────────────────────────────────────────────
 def finalize(items, lane):
     gates = [i for i in items if i["kind"] == "gate"]
@@ -977,6 +1156,7 @@ if __name__ == "__main__":
     elif a.selfcheck:
         r = selfcheck()
         print(json.dumps(r, ensure_ascii=False, indent=2))
-        sys.exit(1 if (r["missing"] or r["extra"]) else 0)
+        bad = any(v["missing"] or v["extra"] for v in r.values())
+        sys.exit(1 if bad else 0)
     else:
         ap.print_help()

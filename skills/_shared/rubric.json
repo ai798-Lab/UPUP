@@ -4,7 +4,8 @@
   "doc": "机械检查项的单一真相源。SKILL.md 里的检查表由 rubric_check.py --print-table 生成后贴回，--check-doc 断言两边一致，谁改了不同步当场红。人不许手改 SKILL.md 里的表。",
   "lanes": {
     "audit": "site-audit 的机械项：吃一个线上 URL。",
-    "write": "page-write 的机械闸：吃一份草稿 md，只测「草稿里那个可上线内容块」本身。页面级信号（能不能抓到、sitemap 通不通）在草稿态不存在，不在本 lane。"
+    "write": "page-write 的机械闸：吃一份草稿 md，只测「草稿里那个可上线内容块」本身。页面级信号（能不能抓到、sitemap 通不通）在草稿态不存在，不在本 lane。",
+    "meta": "meta-write 的机械闸：吃一对 title 与 meta description，外加这一页的页型与主词。它只测这两行字本身，正文与页面级信号不在本 lane。"
   },
   "evidence_levels": {
     "Official": "有平台或标准的公开文档明写。数字直接来自出处。",
@@ -396,7 +397,8 @@
       "kind": "score",
       "lanes": [
         "audit",
-        "write"
+        "write",
+        "meta"
       ],
       "machine_locked": true,
       "weight": 2,
@@ -832,6 +834,208 @@
         "default": "把内容块里每一处 [待核] 标记，在待核清单里写清楚要核什么。"
       },
       "source": "本套件自定的纪律",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "MG1",
+      "name": "两样都写了",
+      "kind": "gate",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "how": "查 title 与 meta description 是否都存在且非空白。title 少于 6 个字符、description 少于 20 个字符，视同没写。",
+      "anchors": {
+        "pass": "两样都在，且长度分别不低于 6 与 20",
+        "fail": "缺任意一样，或短到等于没写"
+      },
+      "why": "description 缺失时搜索引擎自己从正文抓一段来凑，抓到的往往是导航或第一句废话。这一项不过，后面几项没有意义。",
+      "fix": {
+        "default": "先把这两行补齐再谈优化。description 不要留给搜索引擎自己凑。"
+      },
+      "source": "Google Search Central 明确说明缺失 description 时会自行生成摘要；6 与 20 两个下限是本套件经验值",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "M1",
+      "name": "title 长度",
+      "kind": "score",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "title 字符数，CJK 按 2 计（与 audit lane 的 I1 同一套计法）。",
+      "anchors": {
+        "3": "15 到 60",
+        "2": "60 到 70，或 10 到 15",
+        "1": "超出上述但非空",
+        "0": "空"
+      },
+      "why": "搜索结果会在 60 上下截断。越界不是判死刑，但主词被切掉就等于没写。",
+      "fix": {
+        "2": "压到 60 以内。先砍修饰词，不砍主词。",
+        "1": "同上，当前长度离区间较远。",
+        "0": "补上 title。"
+      },
+      "source": "截断位置随设备与查询变化，60 为本套件取的经验中位；无平台硬性规定",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "M2",
+      "name": "description 长度",
+      "kind": "score",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "meta description 字符数，CJK 按 2 计。",
+      "anchors": {
+        "3": "70 到 155",
+        "2": "155 到 175，或 50 到 70",
+        "1": "超出上述但非空",
+        "0": "空"
+      },
+      "why": "短于 70 是没把位置用满，长于 155 后半段在结果页看不到。钩子要落在前半段。",
+      "fix": {
+        "2": "往 70 到 155 之间调。超长的把钩子挪到前面再截。",
+        "1": "同上。",
+        "0": "补上 description。"
+      },
+      "source": "155 为搜索结果摘要常见截断位的经验值，随设备变化；无平台硬性规定",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "M3",
+      "name": "主词在 title 前半",
+      "kind": "score",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "取主词的实义词集合，找它们在 title 里首次出现的位置，除以 title 长度得到相对位置。没给主词时记未观察。",
+      "anchors": {
+        "3": "首次出现在前 1/3",
+        "2": "出现在前 1/2",
+        "1": "出现但落在后半",
+        "0": "title 里根本没有主词"
+      },
+      "why": "结果页截断从尾部开始。主词放后面，被截掉的就是它。",
+      "fix": {
+        "2": "把主词再往前挪，品牌名往后放。",
+        "1": "同上，当前主词落在后半段。",
+        "0": "这一页的主词没写进 title。先定一个主词，再重写。"
+      },
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "M4",
+      "name": "description 不复述 title",
+      "kind": "score",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "算 title 与 description 两边实义词集合的 Jaccard 相似度。",
+      "anchors": {
+        "3": "重叠度不超过 0.30",
+        "2": "不超过 0.50",
+        "1": "不超过 0.70",
+        "0": "高于 0.70，基本是把标题又说了一遍"
+      },
+      "why": "description 是第二次机会，用来给点击理由。复述标题等于把这次机会浪费掉。",
+      "fix": {
+        "2": "description 换个角度：说清用户能得到什么，而不是重复这页叫什么。",
+        "1": "同上。",
+        "0": "整句重写，不要出现 title 已有的修饰。"
+      },
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "M5",
+      "name": "description 里有具体钩子",
+      "kind": "score",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "在 description 里数四类具体信息各出现与否：① 带单位的数值（秒 / 分钟 / 次 / 个 / % / 美元 / 元 之类）；② 价格或币种；③ 免费程度（免费 / free / 不用注册 / no sign-up 之类）；④ 明确的产出物或支持范围（导出格式、平台名、文件类型）。计命中的类别数。",
+      "anchors": {
+        "3": "命中 2 类以上",
+        "2": "命中 1 类",
+        "1": "一类都没有但句子里含动词",
+        "0": "通篇形容词，没有任何具体信息"
+      },
+      "why": "用户在结果页只想知道能得到什么、多快、要不要钱。写「灵活的解决方案满足不同需求」等于什么都没说。",
+      "fix": {
+        "2": "再加一类具体信息，最容易补的是免费程度或耗时。",
+        "1": "把形容词换成具体的数字、价格或产出物。",
+        "0": "同上，当前一条具体信息都没有。"
+      },
+      "source": "本套件自定的启发式；方向与 KDD 2024 arXiv:2311.09735 中「加带单位数值有效、加权威语气无效」一致，但该实测测的是正文不是 description",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "M6",
+      "name": "页型必答项",
+      "kind": "score",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "按页型查 title 加 description 里必须出现的东西：home 要有品类词与人群或用途；tool 要有功能动词（生成 / 转换 / 检测 / generator / converter 之类）；pricing 要有价格数字与币种。没给页型时记未观察。",
+      "anchors": {
+        "3": "该页型要求的都出现了",
+        "2": "出现一半",
+        "1": "只出现一项",
+        "0": "一项都没有"
+      },
+      "why": "三种页型的用户带着完全不同的问题来。定价页不写价格、工具页不写它能干什么，来的人当场就走。",
+      "fix": {
+        "2": "补齐缺的那一项，报告里列出了缺哪个。",
+        "1": "同上。",
+        "0": "这两行字没有回答这个页型该回答的问题，重写。"
+      },
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "M7",
+      "name": "同组唯一",
+      "kind": "score",
+      "lanes": [
+        "meta"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "一次给多页时，在这一组之间查完全相同的 title 与完全相同的 description。只给一页时记未观察。",
+      "anchors": {
+        "3": "title 与 description 都全组唯一",
+        "2": "description 有重复，title 唯一",
+        "1": "title 有 1 处重复",
+        "0": "title 有 2 处以上重复"
+      },
+      "why": "多页共用一行字是自相残杀：搜索引擎必须在你自己的页面之间挑一个丢一个。批量生成的页面最常犯。",
+      "fix": {
+        "2": "报告列出了重复的页。给每页写各自的 description。",
+        "1": "同上，title 也要各写各的。",
+        "0": "同上。批量模板要把主词写进变量。"
+      },
+      "source": "唯一性要求见 Google Search Central 标题最佳实践",
       "evidence_level": "Heuristic"
     }
   ]
