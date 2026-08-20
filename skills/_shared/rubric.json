@@ -1,0 +1,838 @@
+{
+  "version": "0.1",
+  "updated_at": "2026-08-20",
+  "doc": "机械检查项的单一真相源。SKILL.md 里的检查表由 rubric_check.py --print-table 生成后贴回，--check-doc 断言两边一致，谁改了不同步当场红。人不许手改 SKILL.md 里的表。",
+  "lanes": {
+    "audit": "site-audit 的机械项：吃一个线上 URL。",
+    "write": "page-write 的机械闸：吃一份草稿 md，只测「草稿里那个可上线内容块」本身。页面级信号（能不能抓到、sitemap 通不通）在草稿态不存在，不在本 lane。"
+  },
+  "evidence_levels": {
+    "Official": "有平台或标准的公开文档明写。数字直接来自出处。",
+    "Research": "有公开研究或公开基准的实测支撑。结论方向可信，具体数字随语料变。",
+    "Derived": "阈值由本次跑到的对照组现算，不是预设值。出处就是抓来的那几个页面。",
+    "Heuristic": "本套件自定的经验值，没有公开出处。不冒充平台规则。"
+  },
+  "pass_rule": {
+    "gate": "任一 gate 未过，分数不再有意义。audit lane 里 gate 未过 = 本周那一个动作必须先修它。",
+    "gate_order": "多个 gate 同时未过时，抓取类（G1 可达 / G2 爬虫可进）永远排在内容类前面。内容拿不到时，改文案收益为零。",
+    "score_floor": "任一计分项低于 pass_at = 需要返工。",
+    "unobserved": "未观察的项不计入分母，也绝不折算成 0。一份把未观察算成 0 的报告会让站主照着乱改。"
+  },
+  "items": [
+    {
+      "id": "G1",
+      "name": "页面取得到",
+      "kind": "gate",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "how": "看 HTTP 状态码分类：2xx 为 ok；401/403/429/451 为 blocked（站活着，被防护规则拦了）；404 与 5xx 为 dead；连接层失败为 unknown。",
+      "anchors": {
+        "pass": "reach = ok",
+        "fail": "reach = dead",
+        "blocked": "reach = blocked，单独一档，不判成站下线"
+      },
+      "why": "403 不等于网站下线。独立开发者的站大量挂 CDN 防护，把被拦判成挂了会大面积误伤，而且会把动作指向错误的方向。",
+      "fix": {
+        "blocked": "去 CDN 后台放行爬虫 UA。不是部署问题，别去查部署。",
+        "dead": "查这个地址对不对、部署有没有成功。",
+        "unknown": "连接层就失败了，本次不判定，换个网络再跑一次。"
+      },
+      "source": "HTTP 状态码语义，RFC 9110",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "G2",
+      "name": "爬虫进得来",
+      "kind": "gate",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "how": "robots.txt 按 RFC 9309 最长匹配规则，对四档 bot 分别判：search（Googlebot/Bingbot）、ai_search（OAI-SearchBot/Claude-SearchBot/PerplexityBot）、ai_user（ChatGPT-User/Claude-User/Perplexity-User）、training（GPTBot/ClaudeBot/CCBot/Google-Extended）。另查页面 meta robots 与响应头 X-Robots-Tag 的 noindex。robots.txt 返回 404 = 全放行，正常状态。403 或超时 = 未观察，此时不给任何改 robots 的动作。",
+      "anchors": {
+        "pass": "search / ai_search / ai_user 三档全放行，且无 noindex",
+        "fail": "三档里任意一档被挡，或存在 noindex",
+        "note": "training 档被挡不算失败，拦不拦是站主的选择，只报事实"
+      },
+      "why": "ai_user 被挡的后果和其他档不是一回事：AI 回答用户提问的当下取不到页面，写得再好也引不到。这是 SEO 和 GEO 真正分道的地方。",
+      "fix": {
+        "robots": "改 robots.txt 里挡住那一档的那条规则（报告会指出是哪一行）。",
+        "meta_noindex": "删掉页面 meta robots 里的 noindex。",
+        "header_noindex": "去托管平台或服务端配置删掉 X-Robots-Tag 响应头。这一处站主通常不知道自己带着。",
+        "unobserved": "robots.txt 取不到，本项不判定，不给动作。"
+      },
+      "source": "RFC 9309 Robots Exclusion Protocol；UA 字符串见 references.md §1",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "G3",
+      "name": "正文在初始 HTML 里",
+      "kind": "gate",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "how": "剥掉 script/style/head/noscript/svg 后数正文词数，CJK 逐字计一词。",
+      "anchors": {
+        "pass": "≥ 120 词",
+        "fail": "< 120 词"
+      },
+      "why": "爬虫不跑 JS。正文只在 JS 渲染后才出现，等于爬虫看到一个空壳。",
+      "fix": {
+        "default": "把这一页改成服务端渲染或静态生成。这是本周唯一该做的事，做完再看别的项。"
+      },
+      "source": "阈值 120 词是本套件的经验值，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "T1",
+      "name": "sitemap 可用",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "按三个来源找：robots.txt 里声明的地址、/sitemap.xml 等常见路径、/sitemap。取到后判根元素必须是 urlset 或 sitemapindex，且首 400 字符里不含 <html。",
+      "anchors": {
+        "3": "找得到且是合法 XML，robots.txt 里也用绝对地址声明了",
+        "2": "找得到且合法，但 robots.txt 里没声明",
+        "1": "找得到但是软 404：返回 200 却是一页 HTML",
+        "0": "三个来源都没有"
+      },
+      "why": "sitemap 是没有外链的新站唯一稳定的发现入口。软 404 单列一档，因为它看起来像「有」，实际等于没有。",
+      "fix": {
+        "0": "生成一份 sitemap.xml，并在 robots.txt 里加一行 Sitemap: https://你的域名/sitemap.xml",
+        "1": "这个地址返回的是 HTML 不是 XML。确认生成逻辑，或把地址改对。",
+        "2": "在 robots.txt 里加一行绝对地址的 Sitemap 声明。"
+      },
+      "source": "sitemaps.org 协议",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "T2",
+      "name": "sitemap 内容卫生",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "查五项：单文件不超 5 万条、不超 50MB、全绝对路径、同 host、无 fragment、协议统一；另查 lastmod 格式是否合法、是否全站同一个日期。",
+      "anchors": {
+        "3": "五项全过且 lastmod 可信",
+        "2": "只有 lastmod 问题（格式或全站同日）",
+        "1": "有相对路径、跨 host 或 fragment",
+        "0": "超过条数或体积硬上限"
+      },
+      "why": "全站 lastmod 同一个日期等于没有信息，会被直接忽略，但它看起来像「每页都有 lastmod」，所以要单独点名。",
+      "fix": {
+        "0": "拆成 sitemap index。",
+        "1": "sitemap 里只放同一个 host 的完整绝对地址，去掉 # 锚点。",
+        "2": "让 lastmod 反映每页真实更新时间，或者干脆不写。写成全站同一天不如不写。"
+      },
+      "source": "sitemaps.org 协议（条数与体积上限）；lastmod 可信度判据为本套件经验值",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "T3",
+      "name": "sitemap 里的地址真的活着",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "等距抽 5 条真发 HEAD 请求。分开统计死链（404/5xx）、重定向（3xx）、被拦（401/403/429）。被拦不计入死链。",
+      "anchors": {
+        "3": "抽样全部 200 直达",
+        "2": "有重定向但没有死链",
+        "1": "抽样里有 1 条死链",
+        "0": "抽样里有 2 条以上死链"
+      },
+      "why": "sitemap 格式全对、里面躺着死链，是最常见的沉默故障：所有检查器都说你有 sitemap，但爬虫按它抓一路撞墙。等距抽样而不是随机，是为了让两次体检的结果可比。",
+      "fix": {
+        "1": "报告里列了是哪几条。从 sitemap 里删掉，或把页面补回来。",
+        "0": "sitemap 的生成逻辑和实际路由已经对不上了，先修生成逻辑再谈别的。",
+        "2": "重定向的那几条把 sitemap 里的地址直接换成重定向后的终点。"
+      },
+      "source": "本套件自定，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "T4",
+      "name": "canonical 数量与形态",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "数页面里 rel=canonical 的标签数，查是否绝对 URL、是否带 fragment、host 与协议是否与本页一致。",
+      "anchors": {
+        "3": "恰好一个，绝对 URL，无 fragment",
+        "2": "恰好一个但是相对路径",
+        "1": "恰好一个但带 fragment 或跨了协议",
+        "0": "0 个，或 2 个以上"
+      },
+      "why": "多个 canonical 时搜索引擎会全部忽略，等于一个都没写，但页面上看起来「配了」。",
+      "fix": {
+        "0": "每页留且只留一个 canonical，写完整绝对地址。",
+        "2": "改成完整绝对地址。",
+        "1": "去掉 # 后面的部分，协议统一成 https。"
+      },
+      "source": "Google Search Central 规范化文档",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "T5",
+      "name": "canonical 指向的地址 200 直达",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "对 canonical 目标发不跟随重定向的 HEAD 请求。",
+      "anchors": {
+        "3": "200 直达",
+        "2": "一次 301 到 200",
+        "1": "多跳重定向",
+        "0": "404 或 5xx"
+      },
+      "why": "canonical 指向死页等于把这一页的权重扔了，而页面本身看起来完全正常。",
+      "fix": {
+        "0": "canonical 指的地址是死的。把它改成这一页真实的可访问地址。",
+        "2": "把 canonical 直接写成重定向后的终点，省掉这一跳。"
+      },
+      "source": "Google Search Central 规范化文档",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "T6",
+      "name": "四种写法归一",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "对 http/https 乘带不带 www 四个入口分别请求，看最终落点与 canonical 是不是同一个地址。取不到的入口记未观察，不算失败。",
+      "anchors": {
+        "3": "四个入口全部归到同一个地址",
+        "2": "三个归一，一个未观察",
+        "1": "有两个不同的落点",
+        "0": "四个入口落到三个以上不同的地址"
+      },
+      "why": "独立站极常见配错，且是机器一查就知道的事。四个入口各自被当成独立页面时，你的外链和权重被分成四份。",
+      "fix": {
+        "1": "在托管平台上把非主形态的三个入口 301 到主形态。",
+        "0": "同上，先统一到 https 加不带 www（或反过来），全站保持一致。"
+      },
+      "source": "Google Search Central 规范化文档",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "T7",
+      "name": "JSON-LD 语法能解析",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "对每个 application/ld+json 块跑 json.loads，统计坏块数。",
+      "anchors": {
+        "3": "有 JSON-LD 且全部能解析",
+        "2": "有多个块，坏了 1 个",
+        "1": "有多个块，坏了 2 个以上",
+        "0": "有 JSON-LD 但一个都解析不了；或页面完全没有 JSON-LD"
+      },
+      "why": "坏掉的 JSON-LD 等于完全不存在，但站主以为自己做了，所以永远不会去查。这是沉默故障之王，因此排在 JSON-LD 三项的第一条。",
+      "fix": {
+        "0": "拿报告里给出的报错位置修 JSON 语法。最常见的是模板变量没替换、多了一个逗号、引号没转义。",
+        "2": "同上，报告会指出是第几个块。"
+      },
+      "source": "schema.org / JSON-LD 1.1 规范",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "T8",
+      "name": "JSON-LD 类型对得上这一页",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "取全部 @type，判断是否含至少一个页面级类型（SoftwareApplication / WebApplication / Product / Article / FAQPage / HowTo / BlogPosting / Course / Recipe 等），而不是只有站级类型（Organization / WebSite / BreadcrumbList）。",
+      "anchors": {
+        "3": "有页面级类型且有站级类型",
+        "2": "只有页面级类型",
+        "1": "只有站级类型",
+        "0": "有 JSON-LD 但没有可识别的 @type"
+      },
+      "why": "只写 Organization 和 WebSite，等于只告诉机器「这是个网站」，没告诉它这一页是什么。AI 要的是后者。",
+      "fix": {
+        "1": "给这一页加一个页面级类型。工具页用 SoftwareApplication，文章页用 Article，问答区用 FAQPage。",
+        "0": "JSON-LD 里补上 @type 字段。"
+      },
+      "source": "schema.org 类型体系",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "T9",
+      "name": "JSON-LD 写的和页面上看得到的一致",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "取 JSON-LD 里的 price、ratingValue、reviewCount、name 等可见字段值，在页面正文里搜同一个值。另单独标记自评自打分（页面自身给自己写 aggregateRating）。",
+      "anchors": {
+        "3": "抽到的字段值在正文里都能找到",
+        "2": "有 1 个字段对不上",
+        "1": "有 2 个以上对不上",
+        "0": "存在自评自打分的 aggregateRating"
+      },
+      "why": "结构化数据和页面内容不一致是平台明令的违规项，而且 AI 会把那个错数字直接引出去，比不写更糟。",
+      "fix": {
+        "0": "删掉自己给自己写的 aggregateRating。",
+        "1": "让 JSON-LD 里的价格、评分、名称跟页面上显示的完全一致。",
+        "2": "同上。"
+      },
+      "source": "Google 结构化数据通用指南（内容必须与页面可见内容一致）",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "C1",
+      "name": "H1 存在且唯一",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "数初始 HTML 里非空 h1 标签的个数（不按文本去重，两个一样的也算两个）。",
+      "anchors": {
+        "3": "恰好 1 个",
+        "2": "多于 1 个",
+        "0": "一个都没有"
+      },
+      "why": "H1 是抽取时最先被当成「这一页在讲什么」的那行字。没有 H1，爬虫只能去猜。",
+      "fix": {
+        "0": "给这一页加一个 H1，写成这页要回答的那个问题本身，不要写站名。",
+        "2": "只留一个 H1，其余降成 H2。"
+      },
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "C2",
+      "name": "首屏 50 词直接给答案",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "取正文前 50 词，① 数其中落在 title 与 meta description 实义词集合里的词；② 算其中有多少词来自 header/nav 的导航文本。",
+      "anchors": {
+        "3": "实义词命中 ≥2 且导航词占比 <30%",
+        "2": "实义词命中 ≥2 但导航词占比 30% 到 60%",
+        "1": "实义词命中 1，或导航词占比 >60%",
+        "0": "实义词命中 0"
+      },
+      "why": "检索的最小单位是段落不是页面。前 50 词全是导航文字时，抽取到的那一段回答不了任何问题。",
+      "fix": {
+        "0": "把这一页的结论写成开头第一句，别让正文从导航或口号开始。",
+        "1": "同上，并把导航挪出正文区。"
+      },
+      "source": "抽取友好的启发式，见 references.md §3；具体阈值为本套件经验值",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "C3",
+      "name": "可提取证据密度",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "按块统计：含可提取证据的块 / 总块数。可提取证据 = 带单位的数值、可归属引语、带来源链接的断言、明确的上下界或区间。用占比不用每百词，理由同 W1。",
+      "anchors": {
+        "3": "占比 ≥30%",
+        "2": "≥15%",
+        "1": "> 0 但不足 15%",
+        "0": "一个都没有"
+      },
+      "why": "公开研究实测九种改写手法：加引语、加带单位统计数字、标注来源效果最好；写得更权威几乎无提升；关键词堆砌低于不改。见 references.md §2。用密度而不是绝对条数，长文才不会靠篇幅蒙混过关。",
+      "fix": {
+        "0": "把「很快」「很多用户」这类说法换成带单位的具体数字，并标出处。",
+        "1": "同上，重点补在每一节的第一段。"
+      },
+      "source": "见 references.md §2，KDD 2024 arXiv:2311.09735 实测九种手法的对照结果",
+      "evidence_level": "Research"
+    },
+    {
+      "id": "C4",
+      "name": "无营销腔",
+      "kind": "score",
+      "lanes": [
+        "audit",
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "在正文里搜营销套话（#1 / best ever / amazing / world's best / free forever / revolutionary / 业界领先 / 遥遥领先 / 一键搞定 之类），命中就把原句抄出来。",
+      "anchors": {
+        "3": "0 处",
+        "2": "1 处",
+        "1": "2 到 3 处",
+        "0": "4 处以上"
+      },
+      "why": "同一批实测里，把语气写得更权威几乎没有提升，关键词堆砌反而低于不改。营销腔占的是本可以放事实的位置。",
+      "fix": {
+        "1": "报告里抄出了原句。把形容词换成可验证的事实。",
+        "0": "同上。"
+      },
+      "source": "见 references.md §2，KDD 2024 arXiv:2311.09735",
+      "evidence_level": "Research"
+    },
+    {
+      "id": "K1",
+      "name": "一页一主词",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "取 sitemap 里的页面，两两算 title 与 H1 的实义词重叠度（Jaccard），列出重叠 ≥0.6 的页面对。只在拿到 ≥3 个页面时才判定，否则记未观察。",
+      "anchors": {
+        "3": "没有重叠 ≥0.6 的页面对",
+        "2": "有 1 对",
+        "1": "有 2 到 3 对",
+        "0": "有 4 对以上"
+      },
+      "why": "两页抢同一个词，是自己打自己。这件事人肉看不出来，机器一算就知道，所以值得做成判据。",
+      "fix": {
+        "2": "报告里列出了是哪两页。让其中一页换一个更具体的主词，或者合并成一页。",
+        "1": "同上。",
+        "0": "这是批量生成页面的典型症状。先合并，再考虑用不同的角度重写。"
+      },
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "K2",
+      "name": "四处一致",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "取 title、H1、URL 路径、正文第一句四处的实义词集合，算两两交集里是否存在至少一个共同的主词。",
+      "anchors": {
+        "3": "四处都含同一个主词",
+        "2": "三处含",
+        "1": "两处含",
+        "0": "四处对不上同一个词"
+      },
+      "why": "四处对不上，搜索引擎不知道这一页到底在讲什么，只能各取一点去猜。",
+      "fix": {
+        "1": "定一个这页的主词，让 title、H1、URL、第一句都出现它。",
+        "0": "同上。这一项不改，后面所有内容优化的收益都会被稀释。"
+      },
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "I1",
+      "name": "title 长度与全站唯一",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "本页 title 字符数（CJK 按 2 计），并在抓到的多页之间查完全相同的 title。",
+      "anchors": {
+        "3": "长度在 15 到 60 之间且全站唯一",
+        "2": "长度越界但唯一",
+        "1": "与另外 1 页重复",
+        "0": "与 2 页以上重复，或没有 title"
+      },
+      "why": "多页共用一个 title 是自相残杀：搜索引擎必须在你自己的页面之间挑一个丢一个。",
+      "fix": {
+        "1": "报告列出了重复的页面。给每一页写各自的 title。",
+        "0": "同上。批量生成的页面要把主词写进模板变量。"
+      },
+      "source": "长度区间为本套件经验值；唯一性要求见 Google Search Central 标题最佳实践",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "I2",
+      "name": "语言标记",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 1,
+      "pass_at": 2,
+      "how": "查 html 标签的 lang 属性：存在、用连字符不用下划线、与 URL 里的语言段一致；RTL 语言（ar/he/fa/ur）另查 dir=rtl。",
+      "anchors": {
+        "3": "全部满足",
+        "2": "有 lang 但与 URL 语言段对不上",
+        "1": "写成了下划线（zh_CN）",
+        "0": "没有 lang"
+      },
+      "why": "语言标记错了，多语言站会被判成重复内容，RTL 语言还会直接渲染错。",
+      "fix": {
+        "0": "给 html 标签加 lang。",
+        "1": "下划线改成连字符：zh_CN 要写成 zh-CN。",
+        "2": "让 lang 跟 URL 里的语言段一致。"
+      },
+      "source": "BCP 47 语言标签",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "I3",
+      "name": "hreflang 自指与互指",
+      "kind": "score",
+      "lanes": [
+        "audit"
+      ],
+      "machine_locked": true,
+      "weight": 1,
+      "pass_at": 2,
+      "how": "取页面 hreflang 集合，查是否包含指向自己的那一条、是否有 x-default。只在页面存在 hreflang 或 URL 含语言段时判定，单语言站记未观察。",
+      "anchors": {
+        "3": "有自指且有 x-default",
+        "2": "有自指但没有 x-default",
+        "1": "有 hreflang 但没有自指",
+        "0": "多语言站但完全没有 hreflang"
+      },
+      "why": "缺自指时整组 hreflang 会被忽略，等于白配。",
+      "fix": {
+        "1": "每一页的 hreflang 列表里都要有指向它自己的那一条。",
+        "2": "加一条 x-default 指向默认语言版本。",
+        "0": "给多语言页面加 hreflang 组。"
+      },
+      "source": "Google Search Central 多语言站点文档",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "WG1",
+      "name": "答案前置",
+      "kind": "gate",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "how": "把内容块转纯文本，取前 50 个词（CJK 逐字计一词），数目标问题里的实义词命中几个。实义词 = 去掉 best/free/online/the/a/how/what 这类通用词后剩下的词。",
+      "anchors": {
+        "pass": "命中 ≥2 个实义词（问题实义词不足 2 个时要求全命中），且内容块 ≥20 词",
+        "fail": "低于上述"
+      },
+      "why": "被摘走的是一个段落，不是整页。开头 50 词没有正面回答问题，这段就不会被当成答案。",
+      "fix": {
+        "default": "把结论提到第一句。前 50 词里要出现目标问题的主词。"
+      },
+      "source": "抽取友好的启发式，见 references.md §3。不是已证实的平台规则",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "W1",
+      "name": "事实密度",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "按块统计：把内容块切成段落级单元（p / li / 表格行 / figcaption / 标题）。含事实的块 = 块内出现带单位的数值（%、倍、秒、分钟、人、次、题、元、美元、GB 之类）或明确日期。事实占比 = 含事实的块数 / 总块数。用占比而不是每百词，是因为 CJK 逐字计词会让中文密度被严重稀释，两种语言的每百词基准不可比。通过线取对照组中位数：抓到 ≥3 个对照页时用它们的中位数，取不到对照组时回退到经验值 0.30，并在报告里标明这次用的是回退值。",
+      "anchors": {
+        "3": "事实占比 ≥ 通过线",
+        "2": "≥ 通过线的 60%",
+        "1": "> 0 但不足 60%",
+        "0": "一个含事实的块都没有"
+      },
+      "why": "用占比而不是绝对条数，长文才不会靠篇幅蒙混。通过线取对照组中位数而不是拍一个数字：你的竞品页写到什么密度，你的线就在哪，出处是抓来的那几个页面，不是编的。取不到对照组时才用回退值，且必须标出来。",
+      "fix": {
+        "0": "整段没有一个具体数字。把「很快」「很多人用」换成带单位的数值。",
+        "1": "报告给出了对照组每百词的中位数和你的当前值，按差额补。",
+        "2": "同上。"
+      },
+      "source": "阈值由本次对照组现算",
+      "evidence_level": "Derived"
+    },
+    {
+      "id": "W2",
+      "name": "来源标注率",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "在含数值的块里，数有多少块在块内挂了来源：带 href 的外链、cite 标签，或 according to / 据 / 来源： / source: 之类的显式标注。算比例。内容块里一个数值块都没有时记未观察，不判 0，那种情况已经由 W1 罚过。",
+      "anchors": {
+        "3": "≥60% 的数值块挂了来源",
+        "2": "≥30%",
+        "1": "> 0 但不足 30%",
+        "0": "有数值块但一条来源都没挂"
+      },
+      "why": "数字不标来源，机器无法判断它是事实还是自称。标注来源是实测里效果最好的三种手法之一。",
+      "fix": {
+        "0": "每个数字后面挂上它的出处链接。自己产品的数据就标明是自测，也算标注。",
+        "1": "优先给最关键的那两三个数字补来源。",
+        "2": "同上。"
+      },
+      "source": "见 references.md §2，标注来源是实测里效果最好的三种手法之一",
+      "evidence_level": "Research"
+    },
+    {
+      "id": "W3",
+      "name": "来源真的打得开",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "对内容块里的每个来源链接发 HEAD 请求（最多 8 条）。分开统计死链与被防护拦住的。被拦记未观察，不算死链。",
+      "anchors": {
+        "3": "全部可达",
+        "2": "有 1 条未观察，无死链",
+        "1": "有 1 条死链",
+        "0": "有 2 条以上死链"
+      },
+      "why": "挂一个打不开的来源，比不挂更糟：它同时损失了可信度和一次被核查的机会。这是证据链上最容易断、也最容易机器验的一环。",
+      "fix": {
+        "1": "报告列出了是哪条。换成可达的地址，或者删掉这条主张。",
+        "0": "同上。"
+      },
+      "source": "本套件自定，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "W4",
+      "name": "来源是不是一手",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "给每个来源域名分档：一手（.gov / .edu / 标准组织 / 论文 DOI / 官方文档域名 / 产品自己的官网）、二手（新闻媒体）、弱（聚合博客、内容农场、社交平台）。",
+      "anchors": {
+        "3": "一手来源 ≥ 半数",
+        "2": "至少有 1 条一手来源",
+        "1": "全是二手",
+        "0": "全是弱来源"
+      },
+      "why": "同一个数字，引原始出处和引转述博客，可信度不是一回事。转述常常已经把数字抄错了。",
+      "fix": {
+        "1": "顺着二手报道找到它引的那份原始文档，改引原始出处。",
+        "0": "同上。这一步通常只要多点两下。"
+      },
+      "source": "分档规则为本套件自定，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "W5",
+      "name": "数字在来源里查得到",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 3,
+      "pass_at": 2,
+      "how": "对每条挂了来源的数值句，抓来源页正文，搜这个数字串是否出现（同时试千分位与去千分位两种写法）。来源抓不到时记未观察，不判失败。",
+      "anchors": {
+        "3": "抽查的数字全部在来源页里找得到",
+        "2": "有 1 个找不到，但来源页可达",
+        "1": "有 2 个以上找不到",
+        "0": "所有挂了来源的数字，一个都在来源页里找不到"
+      },
+      "why": "这是证据链的最后一环，也是唯一能机器验的那一环：链接可达不代表那个数字真的在里面。挂着可达但内容对不上的来源，是最像真的假证据。",
+      "fix": {
+        "1": "报告指出了是哪个数字。核对原文，改数字或改来源。",
+        "0": "整段的来源和数字对不上，逐条核。",
+        "2": "同上。"
+      },
+      "source": "本套件自定，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "W6",
+      "name": "有可被引的图或视频",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "数内容块里的 img 与 video/iframe，查三样：img 有没有非空 alt、图或视频旁边有没有说明文字（figcaption 或紧邻的一句话）、JSON-LD 里有没有对应的 ImageObject 或 VideoObject。",
+      "anchors": {
+        "3": "有素材，alt 齐全，且 JSON-LD 里声明了 ImageObject 或 VideoObject",
+        "2": "有素材且 alt 齐全，但没在 JSON-LD 里声明",
+        "1": "有素材但缺 alt 或缺说明",
+        "0": "一张图一个视频都没有"
+      },
+      "why": "光有图不够，机器读不到像素。alt、说明文字、JSON-LD 声明是把素材翻译成机器能引用的形式的三个通道，缺一个就少一条被引路径。",
+      "fix": {
+        "0": "这段内容配一张能独立说明问题的图（截图、对比图、流程图都行）。",
+        "1": "给图补 alt，写成描述这张图在说明什么，不是文件名。给图配一句说明。",
+        "2": "在 JSON-LD 里加 ImageObject（视频用 VideoObject，带 name、description、thumbnailUrl、uploadDate）。"
+      },
+      "source": "schema.org ImageObject / VideoObject；alt 的作用见 Google Search Central 图片最佳实践",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "W7",
+      "name": "段落能单独站住",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "逐段查开头是否为无先行词的指代（它 / 该方案 / 这一点 / this / that / it 开头且本段内没有出现过被指代的名词），把命中的段落原句列出来。",
+      "anchors": {
+        "3": "0 段命中",
+        "2": "1 段命中",
+        "1": "2 到 3 段命中",
+        "0": "4 段以上命中"
+      },
+      "why": "检索的最小单位是段落。一段被单独摘出来时，找不到先行词的代词会让整段读不懂，机器也就不会摘它。",
+      "fix": {
+        "2": "报告列出了是哪几段。把段首的代词换成它指代的那个名词。",
+        "1": "同上。",
+        "0": "同上。"
+      },
+      "source": "抽取友好的启发式，见 references.md §3。不是已证实的平台规则",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "W8",
+      "name": "Schema",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 2,
+      "pass_at": 2,
+      "how": "解析内容块里的 JSON-LD，取 @type 集合，与有效类型集比对（SoftwareApplication / WebApplication / HowTo / FAQPage / Article / Product / ItemList / ImageObject / VideoObject）。语法坏的块记 0。",
+      "anchors": {
+        "3": "能解析，命中有效类型且类型数 ≥2",
+        "2": "能解析且有任意有效类型",
+        "1": "有 JSON-LD 但类型不在有效集里",
+        "0": "没有 JSON-LD，或块解析不了"
+      },
+      "why": "草稿阶段就把 JSON-LD 写进同一个块，是为了避免「内容贴上去了、schema 忘了配」这个最常见的掉链子。",
+      "fix": {
+        "0": "在同一个内容块里补一段 JSON-LD。语法先跑一遍 json.loads 确认能解析。",
+        "1": "换成本页真实身份对应的类型。"
+      },
+      "source": "schema.org 类型体系",
+      "evidence_level": "Official"
+    },
+    {
+      "id": "W9",
+      "name": "内链",
+      "kind": "score",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "weight": 1,
+      "pass_at": 1,
+      "how": "数内容块里 href 指向站内（以 / 开头）的去重链接数。",
+      "anchors": {
+        "3": "≥5",
+        "2": "≥3",
+        "1": "≥1",
+        "0": "0"
+      },
+      "why": "孤岛页面拿不到站内权重传递，爬虫也不容易再爬回来。",
+      "fix": {
+        "0": "从这段里链到站内相关的两三页。",
+        "1": "同上。"
+      },
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "D1",
+      "name": "有可复现验证命令",
+      "kind": "gate",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "how": "草稿里必须有一个 bash 代码块，且块内出现 curl 或 grep。",
+      "anchors": {
+        "pass": "存在这样的 bash 块",
+        "fail": "没有"
+      },
+      "why": "没有验证命令的建议无法复核，等于让站主凭感觉判断改完有没有生效。",
+      "fix": {
+        "default": "补一个 bash 块，写清楚贴上去之后跑什么命令能看到它生效。"
+      },
+      "source": "本套件自定的纪律",
+      "evidence_level": "Heuristic"
+    },
+    {
+      "id": "D2",
+      "name": "有待核清单",
+      "kind": "gate",
+      "lanes": [
+        "write"
+      ],
+      "machine_locked": true,
+      "how": "草稿里必须有「待核 / 需核 / needs_review」小节标题；内容块里每一处 [待核] / [需核] / [未验证] 标记，清单里都要有对应条目。",
+      "anchors": {
+        "pass": "存在该小节，且内容块里的标记数 ≤ 清单条目数",
+        "fail": "缺小节，或标记数多于条目数"
+      },
+      "why": "站点专有的功能、数字、算法只有站主能确认。不标待核就是替站主拍板，写错了他还不知道要核。",
+      "fix": {
+        "default": "把内容块里每一处 [待核] 标记，在待核清单里写清楚要核什么。"
+      },
+      "source": "本套件自定的纪律",
+      "evidence_level": "Heuristic"
+    }
+  ]
+}

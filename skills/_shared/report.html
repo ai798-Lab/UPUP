@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UPUP 体检报告</title><style>
+:root{--ink:#1b1a18;--sub:#6b6660;--line:#e3ded5;--bg:#fbfaf7;--accent:#0f4c81;--red:#b02a1e;--ok:#2f6b46}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"PingFang SC","Hiragino Sans GB",sans-serif;background:var(--bg);
+color:var(--ink);line-height:1.85;font-size:15px;padding:56px 24px 120px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto}
+.kicker{font-size:12px;letter-spacing:.22em;color:var(--sub);margin-bottom:16px}
+h1{font-size:28px;font-weight:700;line-height:1.35;margin-bottom:6px;word-break:break-all}
+h2{font-size:19px;font-weight:700;margin:52px 0 14px;padding-top:18px;border-top:1px solid var(--line)}
+p{margin:0 0 12px}
+pre{background:#1e1e1c;color:#e9e5dc;border-radius:8px;padding:14px 16px;margin:12px 0;
+font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.8;white-space:pre-wrap;overflow-x:auto}
+.verdict{display:inline-block;font-size:12px;letter-spacing:.12em;padding:4px 12px;border-radius:20px;
+border:1px solid var(--line);background:#fff;color:var(--sub)}
+.verdict.PASS{color:var(--ok);border-color:#bcd8c7}
+.verdict.REWORK{color:#8a6a1f;border-color:#eddfb8}
+.verdict.REJECT{color:var(--red);border-color:#eec4bf}
+.action{background:#f4f1ea;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+padding:16px 20px;margin:18px 0}
+.action p:first-child{font-size:17px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+th{text-align:left;font-size:11px;letter-spacing:.08em;color:var(--sub);font-weight:650;
+padding:8px 12px 8px 0;border-bottom:1.5px solid #cfc9bf}
+td{padding:9px 12px 9px 0;border-bottom:1px solid #efece5;vertical-align:top}
+tr.d td{padding-top:0;border-bottom:1px solid #efece5;color:var(--sub);font-size:13px;line-height:1.7}
+tr.ok td:nth-child(4){color:var(--ok)}
+tr.no td:nth-child(4){color:var(--red);font-weight:650}
+tr.unobs td{color:var(--sub)}
+.foot{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}
+.foot code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;word-break:break-all}
+@media(max-width:680px){body{padding:36px 16px 80px}h1{font-size:22px}table{font-size:13px}}
+</style></head>
+<body><div class="wrap">
+<div class="kicker">UPUP · SITE AUDIT</div>
+<h1>{{URL}}</h1>
+<p><span class="verdict {{VERDICT}}">{{VERDICT}}</span> 机械分 {{PERCENT}}%，只用来排序，不是及格证书。未观察的项不进分母。</p>
+
+<h2>本周就做这一件</h2>
+<div class="action">{{ACTION}}</div>
+
+<h2>逐项</h2>
+<table>
+<thead><tr><th>项</th><th>名称</th><th>分</th><th>判定</th><th>出处等级</th></tr></thead>
+<tbody>
+{{ROWS}}
+</tbody>
+</table>
+
+<div class="foot">
+<p>分数由脚本算出并标了 machine_locked，模型只能引用不能改。标「未观察」的项是这次没看到，
+不是零分：把没看到当成没有，会让你照着一份假报告去改。</p>
+<p>出处等级：Official 有平台或标准文档明写 · Research 有公开研究支撑 · Derived 阈值由本次对照组现算 ·
+Heuristic 本套件经验值，不冒充平台规则。</p>
+<p><code>{{DIGEST}}</code></p>
+</div>
+</div></body></html>

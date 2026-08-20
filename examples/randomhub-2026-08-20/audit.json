@@ -1,0 +1,537 @@
+{
+  "lane": "audit",
+  "verdict": "REWORK",
+  "machine_locked": true,
+  "score": {
+    "got": 112,
+    "full": 123,
+    "percent": 91.1,
+    "note": "百分比只用来排序，不是及格证书。未观察的项不进分母。"
+  },
+  "failed_gates": [],
+  "below_floor": [
+    "C3"
+  ],
+  "unobserved": [],
+  "items": [
+    {
+      "id": "G1",
+      "name": "页面取得到",
+      "kind": "gate",
+      "machine_locked": true,
+      "observed": true,
+      "score": 1,
+      "detail": "HTTP 200，判为 ok",
+      "evidence": [
+        {
+          "status": 200,
+          "reach": "ok"
+        }
+      ],
+      "source": "HTTP 状态码语义，RFC 9110",
+      "evidence_level": "Official",
+      "why": "403 不等于网站下线。独立开发者的站大量挂 CDN 防护，把被拦判成挂了会大面积误伤，而且会把动作指向错误的方向。",
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "G2",
+      "name": "爬虫进得来",
+      "kind": "gate",
+      "machine_locked": true,
+      "observed": true,
+      "score": 1,
+      "detail": "被挡的档：无；noindex：无",
+      "evidence": [
+        {
+          "blocked": {},
+          "noindex": [],
+          "cdn_blocked": []
+        }
+      ],
+      "source": "RFC 9309 Robots Exclusion Protocol；UA 字符串见 references.md §1",
+      "evidence_level": "Official",
+      "why": "ai_user 被挡的后果和其他档不是一回事：AI 回答用户提问的当下取不到页面，写得再好也引不到。这是 SEO 和 GEO 真正分道的地方。",
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "G3",
+      "name": "正文在初始 HTML 里",
+      "kind": "gate",
+      "machine_locked": true,
+      "observed": true,
+      "score": 1,
+      "detail": "初始 HTML 正文 1495 词（阈值 120）",
+      "evidence": [],
+      "source": "阈值 120 词是本套件的经验值，无公开出处",
+      "evidence_level": "Heuristic",
+      "why": "爬虫不跑 JS。正文只在 JS 渲染后才出现，等于爬虫看到一个空壳。",
+      "pass": true,
+      "fix": "把这一页改成服务端渲染或静态生成。这是本周唯一该做的事，做完再看别的项。"
+    },
+    {
+      "id": "T1",
+      "name": "sitemap 可用",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "找到 https://randomhub.io/sitemap.xml，robots.txt 已用绝对地址声明",
+      "evidence": [
+        {
+          "tried": [
+            {
+              "url": "https://randomhub.io/sitemap.xml",
+              "status": 200,
+              "reach": "ok",
+              "usable": true,
+              "why": null
+            }
+          ]
+        }
+      ],
+      "source": "sitemaps.org 协议",
+      "evidence_level": "Official",
+      "why": "sitemap 是没有外链的新站唯一稳定的发现入口。软 404 单列一档，因为它看起来像「有」，实际等于没有。",
+      "weight": 3,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T2",
+      "name": "sitemap 内容卫生",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "共 177 条地址，问题 0 项",
+      "evidence": [],
+      "source": "sitemaps.org 协议（条数与体积上限）；lastmod 可信度判据为本套件经验值",
+      "evidence_level": "Official",
+      "why": "全站 lastmod 同一个日期等于没有信息，会被直接忽略，但它看起来像「每页都有 lastmod」，所以要单独点名。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T3",
+      "name": "sitemap 里的地址真的活着",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "抽了 5 条：死链 0，重定向 0，被拦 0（被拦不算死链）",
+      "evidence": [
+        {
+          "dead": [],
+          "redirect": []
+        }
+      ],
+      "source": "本套件自定，无公开出处",
+      "evidence_level": "Heuristic",
+      "why": "sitemap 格式全对、里面躺着死链，是最常见的沉默故障：所有检查器都说你有 sitemap，但爬虫按它抓一路撞墙。等距抽样而不是随机，是为了让两次体检的结果可比。",
+      "weight": 3,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T4",
+      "name": "canonical 数量与形态",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "恰好一个，绝对地址：https://randomhub.io",
+      "evidence": [
+        {
+          "canonical": "https://randomhub.io"
+        }
+      ],
+      "source": "Google Search Central 规范化文档",
+      "evidence_level": "Official",
+      "why": "多个 canonical 时搜索引擎会全部忽略，等于一个都没写，但页面上看起来「配了」。",
+      "weight": 3,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T5",
+      "name": "canonical 指向的地址 200 直达",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "canonical 目标返回 200",
+      "evidence": [
+        {
+          "status": 200,
+          "hops": 0,
+          "error": null,
+          "final": "https://randomhub.io"
+        }
+      ],
+      "source": "Google Search Central 规范化文档",
+      "evidence_level": "Official",
+      "why": "canonical 指向死页等于把这一页的权重扔了，而页面本身看起来完全正常。",
+      "weight": 3,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T6",
+      "name": "四种写法归一",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "四个入口落到 1 个不同地址，未观察 0 个",
+      "evidence": [
+        {
+          "variants": {
+            "http://randomhub.io": {
+              "final": "https://randomhub.io/",
+              "status": 200,
+              "reach": "ok"
+            },
+            "http://www.randomhub.io": {
+              "final": "https://randomhub.io/",
+              "status": 200,
+              "reach": "ok"
+            },
+            "https://randomhub.io": {
+              "final": "https://randomhub.io",
+              "status": 200,
+              "reach": "ok"
+            },
+            "https://www.randomhub.io": {
+              "final": "https://randomhub.io/",
+              "status": 200,
+              "reach": "ok"
+            }
+          }
+        }
+      ],
+      "source": "Google Search Central 规范化文档",
+      "evidence_level": "Official",
+      "why": "独立站极常见配错，且是机器一查就知道的事。四个入口各自被当成独立页面时，你的外链和权重被分成四份。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T7",
+      "name": "JSON-LD 语法能解析",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "6 个块全部能解析",
+      "evidence": [],
+      "source": "schema.org / JSON-LD 1.1 规范",
+      "evidence_level": "Official",
+      "why": "坏掉的 JSON-LD 等于完全不存在，但站主以为自己做了，所以永远不会去查。这是沉默故障之王，因此排在 JSON-LD 三项的第一条。",
+      "weight": 3,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T8",
+      "name": "JSON-LD 类型对得上这一页",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "页面级类型 ['FAQPage', 'ItemList', 'WebApplication']；站级类型 ['Answer', 'ImageObject', 'ListItem', 'Offer', 'Organization', 'Question', 'WebSite']",
+      "evidence": [
+        {
+          "types": [
+            "Answer",
+            "FAQPage",
+            "ImageObject",
+            "ItemList",
+            "ListItem",
+            "Offer",
+            "Organization",
+            "Question",
+            "WebApplication",
+            "WebSite"
+          ],
+          "from_broken_blocks": false
+        }
+      ],
+      "source": "schema.org 类型体系",
+      "evidence_level": "Official",
+      "why": "只写 Organization 和 WebSite，等于只告诉机器「这是个网站」，没告诉它这一页是什么。AI 要的是后者。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "T9",
+      "name": "JSON-LD 写的和页面上看得到的一致",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "比对 1 个字段，正文里找不到的 0 个",
+      "evidence": [
+        {
+          "missing": [],
+          "needs_review": null
+        }
+      ],
+      "source": "Google 结构化数据通用指南（内容必须与页面可见内容一致）",
+      "evidence_level": "Official",
+      "why": "结构化数据和页面内容不一致是平台明令的违规项，而且 AI 会把那个错数字直接引出去，比不写更糟。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "C1",
+      "name": "H1 存在且唯一",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "H1 1 个",
+      "evidence": [
+        {
+          "h1": [
+            "Random Word Generator"
+          ]
+        }
+      ],
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic",
+      "why": "H1 是抽取时最先被当成「这一页在讲什么」的那行字。没有 H1，爬虫只能去猜。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "C2",
+      "name": "首屏 50 词直接给答案",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 2,
+      "detail": "首屏命中主题词 7 个，导航词占比 40%",
+      "evidence": [
+        {
+          "first_50_words": "RandomHub 19 Random Tools Privacy Terms Language English Random Word Generator System v2 1 Loading the English corpus Word data scope Review corpus versions licenses available filt",
+          "hit": [
+            "corpus",
+            "english",
+            "filters",
+            "generate",
+            "generator",
+            "random"
+          ]
+        }
+      ],
+      "source": "抽取友好的启发式，见 references.md §3；具体阈值为本套件经验值",
+      "evidence_level": "Heuristic",
+      "why": "检索的最小单位是段落不是页面。前 50 词全是导航文字时，抽取到的那一段回答不了任何问题。",
+      "weight": 3,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "C3",
+      "name": "可提取证据密度",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 1,
+      "detail": "含可提取证据的块 1 / 49，占比 2%",
+      "evidence": [
+        {
+          "sample": [
+            "Random Word Generator with Source-Backed Filters RandomHub 19 Random Tools [ Privacy ] [ Terms ] Language Engl"
+          ]
+        }
+      ],
+      "source": "见 references.md §2，KDD 2024 arXiv:2311.09735 实测九种手法的对照结果",
+      "evidence_level": "Research",
+      "why": "公开研究实测九种改写手法：加引语、加带单位统计数字、标注来源效果最好；写得更权威几乎无提升；关键词堆砌低于不改。见 references.md §2。用密度而不是绝对条数，长文才不会靠篇幅蒙混过关。",
+      "weight": 3,
+      "pass_at": 2,
+      "pass": false,
+      "fix": "同上，重点补在每一节的第一段。"
+    },
+    {
+      "id": "C4",
+      "name": "无营销腔",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "命中营销套话 0 处",
+      "evidence": [],
+      "source": "见 references.md §2，KDD 2024 arXiv:2311.09735",
+      "evidence_level": "Research",
+      "why": "同一批实测里，把语气写得更权威几乎没有提升，关键词堆砌反而低于不改。营销腔占的是本可以放事实的位置。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "K1",
+      "name": "一页一主词",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "标题高度重叠的页面对 0 组（阈值 0.6）",
+      "evidence": [],
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic",
+      "why": "两页抢同一个词，是自己打自己。这件事人肉看不出来，机器一算就知道，所以值得做成判据。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "K2",
+      "name": "四处一致",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 2,
+      "detail": "四处里最多有 3 处共用同一个主词",
+      "evidence": [
+        {
+          "title": [
+            "backed",
+            "filters",
+            "generator",
+            "random",
+            "source"
+          ],
+          "h1": [
+            "generator",
+            "random",
+            "word"
+          ],
+          "url": [],
+          "first_sentence": "RandomHub 19 Random Tools [ Privacy ] [ Terms ] Language English Random Word Generator System v2.1 Loading the English c"
+        }
+      ],
+      "source": "本套件自定的启发式，无公开出处",
+      "evidence_level": "Heuristic",
+      "why": "四处对不上，搜索引擎不知道这一页到底在讲什么，只能各取一点去猜。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "I1",
+      "name": "title 长度与全站唯一",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "title 长度 48（15 到 60 为宜），与 0 个其他页重复",
+      "evidence": [
+        {
+          "title": "Random Word Generator with Source-Backed Filters",
+          "duplicates": []
+        }
+      ],
+      "source": "长度区间为本套件经验值；唯一性要求见 Google Search Central 标题最佳实践",
+      "evidence_level": "Heuristic",
+      "why": "多页共用一个 title 是自相残杀：搜索引擎必须在你自己的页面之间挑一个丢一个。",
+      "weight": 2,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "I2",
+      "name": "语言标记",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "lang=en",
+      "evidence": [],
+      "source": "BCP 47 语言标签",
+      "evidence_level": "Official",
+      "why": "语言标记错了，多语言站会被判成重复内容，RTL 语言还会直接渲染错。",
+      "weight": 1,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    },
+    {
+      "id": "I3",
+      "name": "hreflang 自指与互指",
+      "kind": "score",
+      "machine_locked": true,
+      "observed": true,
+      "score": 3,
+      "detail": "hreflang 10 条，自指 有，x-default 有",
+      "evidence": [
+        {
+          "hreflang": [
+            "en",
+            "fr",
+            "de",
+            "ru",
+            "ja",
+            "zh-Hant",
+            "ko",
+            "es"
+          ]
+        }
+      ],
+      "source": "Google Search Central 多语言站点文档",
+      "evidence_level": "Official",
+      "why": "缺自指时整组 hreflang 会被忽略，等于白配。",
+      "weight": 1,
+      "pass_at": 2,
+      "pass": true,
+      "fix": null
+    }
+  ],
+  "url": "https://randomhub.io",
+  "origin": "https://randomhub.io",
+  "evidence_digest": {
+    "status": 200,
+    "reach": "ok",
+    "robots_observed": true,
+    "no_robots_file": false,
+    "sitemap_source": "https://randomhub.io/sitemap.xml",
+    "sitemap_count": 177,
+    "peers": 6,
+    "cdn_blocked": [],
+    "ua_probe": {
+      "OAI-SearchBot": 200,
+      "PerplexityBot": 200,
+      "ChatGPT-User": 200
+    }
+  },
+  "next_action": {
+    "id": "C3",
+    "name": "可提取证据密度",
+    "why": "含可提取证据的块 1 / 49，占比 2%",
+    "do": "同上，重点补在每一节的第一段。",
+    "verify": null
+  }
+}

@@ -1,0 +1,466 @@
+{
+  "rivals": [
+    {
+      "target": "randomhub.io",
+      "origin": "https://randomhub.io",
+      "sitemap": "https://randomhub.io/sitemap.xml",
+      "sitemap_count": 177,
+      "observed_pages": 6,
+      "skipped": [],
+      "pages": [
+        {
+          "url": "https://randomhub.io",
+          "title": "Random Word Generator with Source-Backed Filters",
+          "h1": [
+            "Random Word Generator"
+          ],
+          "terms": [
+            "backed",
+            "filters",
+            "generator",
+            "random",
+            "source",
+            "word"
+          ],
+          "word_count": 1495,
+          "fact_density": 0.0,
+          "jsonld_types": [
+            "Answer",
+            "FAQPage",
+            "ImageObject",
+            "ItemList",
+            "ListItem",
+            "Offer",
+            "Organization",
+            "Question",
+            "WebApplication",
+            "WebSite"
+          ],
+          "tables": 0,
+          "images": 2,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://randomhub.io/fr/random-letter-generator",
+          "title": "Générateur de lettres — alphabet français et caractères accentués | RandomHub",
+          "h1": [
+            "Générateur de lettres"
+          ],
+          "terms": [
+            "accentu",
+            "ais",
+            "alphabet",
+            "caract",
+            "de",
+            "et",
+            "fran",
+            "lettres",
+            "randomhub",
+            "rateur",
+            "res"
+          ],
+          "word_count": 1094,
+          "fact_density": 0.0,
+          "jsonld_types": [
+            "Answer",
+            "BreadcrumbList",
+            "FAQPage",
+            "HowTo",
+            "HowToStep",
+            "ImageObject",
+            "ListItem",
+            "Offer",
+            "Organization",
+            "Question",
+            "WebApplication",
+            "WebSite"
+          ],
+          "tables": 0,
+          "images": 1,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://randomhub.io/de/random-quote-generator",
+          "title": "Zitate-Generator — 134 Einträge in 6 Kategorien | RandomHub",
+          "h1": [
+            "Zitate-Generator"
+          ],
+          "terms": [
+            "eintr",
+            "ge",
+            "generator",
+            "kategorien",
+            "randomhub",
+            "zitate"
+          ],
+          "word_count": 735,
+          "fact_density": 0.0,
+          "jsonld_types": [
+            "Answer",
+            "BreadcrumbList",
+            "FAQPage",
+            "HowTo",
+            "HowToStep",
+            "ImageObject",
+            "ListItem",
+            "Offer",
+            "Organization",
+            "Question",
+            "WebApplication",
+            "WebSite"
+          ],
+          "tables": 0,
+          "images": 2,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://randomhub.io/ja/random-name-generator",
+          "title": "名前ジェネレーター｜実在名とファンタジー名 | RandomHub",
+          "h1": [
+            "名前ジェネレーター"
+          ],
+          "terms": [
+            "randomhub",
+            "名前",
+            "在名",
+            "実在"
+          ],
+          "word_count": 2984,
+          "fact_density": 0.014,
+          "jsonld_types": [
+            "Answer",
+            "BreadcrumbList",
+            "FAQPage",
+            "HowTo",
+            "HowToStep",
+            "ImageObject",
+            "ListItem",
+            "Offer",
+            "Organization",
+            "Question",
+            "WebApplication",
+            "WebSite"
+          ],
+          "tables": 1,
+          "images": 2,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://randomhub.io/ko",
+          "title": "한국어 랜덤 단어 생성기｜검토 완료 275개 | RandomHub",
+          "h1": [
+            "랜덤 단어 생성기"
+          ],
+          "terms": [
+            "randomhub"
+          ],
+          "word_count": 3463,
+          "fact_density": 0.0,
+          "jsonld_types": [
+            "Answer",
+            "FAQPage",
+            "HowTo",
+            "HowToStep",
+            "ImageObject",
+            "ItemList",
+            "ListItem",
+            "Offer",
+            "Organization",
+            "Question",
+            "WebApplication",
+            "WebSite"
+          ],
+          "tables": 0,
+          "images": 2,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://randomhub.io/es/random-job-generator",
+          "title": "Generador de profesiones — 93 opciones localizadas | RandomHub",
+          "h1": [
+            "Generador de profesiones"
+          ],
+          "terms": [
+            "de",
+            "generador",
+            "localizadas",
+            "opciones",
+            "profesiones",
+            "randomhub"
+          ],
+          "word_count": 487,
+          "fact_density": 0.0,
+          "jsonld_types": [
+            "BreadcrumbList",
+            "ImageObject",
+            "ListItem",
+            "Offer",
+            "Organization",
+            "WebApplication",
+            "WebSite"
+          ],
+          "tables": 0,
+          "images": 2,
+          "cited_blocks": 0
+        }
+      ],
+      "term_coverage": {
+        "generator": [
+          "https://randomhub.io",
+          "https://randomhub.io/de/random-quote-generator"
+        ],
+        "de": [
+          "https://randomhub.io/fr/random-letter-generator",
+          "https://randomhub.io/es/random-job-generator"
+        ],
+        "randomhub": [
+          "https://randomhub.io/fr/random-letter-generator",
+          "https://randomhub.io/de/random-quote-generator",
+          "https://randomhub.io/ja/random-name-generator",
+          "https://randomhub.io/ko",
+          "https://randomhub.io/es/random-job-generator"
+        ]
+      },
+      "note": null
+    },
+    {
+      "target": "mesonar.com",
+      "origin": "https://mesonar.com",
+      "sitemap": "https://mesonar.com/sitemap.xml",
+      "sitemap_count": 80,
+      "observed_pages": 6,
+      "skipped": [],
+      "pages": [
+        {
+          "url": "https://mesonar.com/",
+          "title": "Mesonar — Sonar your self. Tests that map who you are.",
+          "h1": [],
+          "terms": [
+            "map",
+            "mesonar",
+            "self",
+            "sonar",
+            "tests"
+          ],
+          "word_count": 421,
+          "fact_density": 0.111,
+          "jsonld_types": [
+            "ImageObject",
+            "Organization",
+            "WebSite"
+          ],
+          "tables": 0,
+          "images": 0,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://mesonar.com/zh-CN/test/spirit-animal",
+          "title": "灵兽测试 — 24 组本能选择 | Mesonar",
+          "h1": [],
+          "terms": [
+            "mesonar",
+            "兽测",
+            "本能",
+            "测试",
+            "灵兽",
+            "组本",
+            "能选",
+            "选择"
+          ],
+          "word_count": 746,
+          "fact_density": 0.0,
+          "jsonld_types": [
+            "Answer",
+            "Audience",
+            "BreadcrumbList",
+            "DefinedTerm",
+            "DefinedTermSet",
+            "FAQPage",
+            "ListItem",
+            "Question",
+            "Quiz",
+            "Thing"
+          ],
+          "tables": 0,
+          "images": 0,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://mesonar.com/ja/test/love-language",
+          "title": "ラブランゲージ診断 — 30 問・4 分・無料 | Mesonar",
+          "h1": [],
+          "terms": [
+            "mesonar",
+            "無料",
+            "診断"
+          ],
+          "word_count": 1136,
+          "fact_density": 0.0,
+          "jsonld_types": [
+            "Answer",
+            "Audience",
+            "BreadcrumbList",
+            "DefinedTerm",
+            "DefinedTermSet",
+            "FAQPage",
+            "ListItem",
+            "Question",
+            "Quiz",
+            "Thing"
+          ],
+          "tables": 0,
+          "images": 0,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://mesonar.com/ko/pricing",
+          "title": "요금 — Mesonar",
+          "h1": [
+            "당신의 리포트를, 더 정교한 판형으로."
+          ],
+          "terms": [
+            "mesonar"
+          ],
+          "word_count": 693,
+          "fact_density": 0.0,
+          "jsonld_types": [],
+          "tables": 0,
+          "images": 0,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://mesonar.com/pt-BR/test/attachment-style",
+          "title": "Teste de Estilo de Apego — 4 min, 20 P, Grátis | Mesonar",
+          "h1": [],
+          "terms": [
+            "apego",
+            "de",
+            "estilo",
+            "gr",
+            "mesonar",
+            "min",
+            "teste",
+            "tis"
+          ],
+          "word_count": 569,
+          "fact_density": 0.105,
+          "jsonld_types": [
+            "Answer",
+            "Audience",
+            "BreadcrumbList",
+            "DefinedTerm",
+            "DefinedTermSet",
+            "FAQPage",
+            "ListItem",
+            "Question",
+            "Quiz",
+            "Thing"
+          ],
+          "tables": 0,
+          "images": 0,
+          "cited_blocks": 0
+        },
+        {
+          "url": "https://mesonar.com/fr/test/color-season",
+          "title": "Test de Saison de Couleur — Gratuit, 3 min, Résultat instantané | Mesonar",
+          "h1": [],
+          "terms": [
+            "couleur",
+            "de",
+            "gratuit",
+            "instantan",
+            "mesonar",
+            "min",
+            "saison",
+            "sultat",
+            "test"
+          ],
+          "word_count": 570,
+          "fact_density": 0.036,
+          "jsonld_types": [
+            "Answer",
+            "Audience",
+            "BreadcrumbList",
+            "DefinedTerm",
+            "DefinedTermSet",
+            "FAQPage",
+            "ListItem",
+            "Question",
+            "Quiz",
+            "Thing"
+          ],
+          "tables": 0,
+          "images": 0,
+          "cited_blocks": 0
+        }
+      ],
+      "term_coverage": {
+        "mesonar": [
+          "https://mesonar.com/",
+          "https://mesonar.com/zh-CN/test/spirit-animal",
+          "https://mesonar.com/ja/test/love-language",
+          "https://mesonar.com/ko/pricing",
+          "https://mesonar.com/pt-BR/test/attachment-style",
+          "https://mesonar.com/fr/test/color-season"
+        ],
+        "min": [
+          "https://mesonar.com/pt-BR/test/attachment-style",
+          "https://mesonar.com/fr/test/color-season"
+        ],
+        "de": [
+          "https://mesonar.com/pt-BR/test/attachment-style",
+          "https://mesonar.com/fr/test/color-season"
+        ]
+      },
+      "note": null
+    }
+  ],
+  "mine": {
+    "target": "example.com",
+    "origin": "https://example.com",
+    "sitemap": null,
+    "sitemap_count": 1,
+    "observed_pages": 1,
+    "skipped": [],
+    "pages": [
+      {
+        "url": "https://example.com",
+        "title": "Example Domain",
+        "h1": [
+          "Example Domain"
+        ],
+        "terms": [
+          "domain",
+          "example"
+        ],
+        "word_count": 19,
+        "fact_density": 0.0,
+        "jsonld_types": [],
+        "tables": 0,
+        "images": 0,
+        "cited_blocks": 1
+      }
+    ],
+    "term_coverage": {},
+    "note": null
+  },
+  "topics": [
+    {
+      "topic": "generator",
+      "rival_pages": 2,
+      "page": "https://randomhub.io/de/random-quote-generator",
+      "from": "https://randomhub.io",
+      "fact_density": 0.0,
+      "why_it_works": [
+        "写了 FAQ 结构化数据",
+        "写了步骤结构化数据",
+        "配了 2 张图"
+      ],
+      "you_lack": [
+        "你全站没有 FAQ 结构化数据",
+        "你全站没有对比表"
+      ]
+    }
+  ],
+  "coverage_note": "每家最多抓 6 页，等距取样。结论只覆盖抓到的这些页，不是全站结论。"
+}
