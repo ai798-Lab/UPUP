@@ -445,6 +445,106 @@ def run_audit_unobserved_not_zero():
         bad("未观察项进了分母，满分基数 %s" % res["score"]["full"])
 
 
+
+# ── meta lane ──────────────────────────────────────────────────────────
+def run_meta_cases():
+    """每条靶标只钉一项：改坏那一处，必须且只必须让对应判据掉下来。"""
+    GOOD = dict(
+        title="Free AI Caption Generator: Social Media Captions in Seconds",
+        description=("Generate on-brand social media captions instantly with our free "
+                     "AI caption generator. For Instagram, Facebook, LinkedIn, and more."),
+        keyword="AI caption generator", page_type="tool")
+
+    def case(label, checker, **over):
+        kw = dict(GOOD)
+        kw.update(over)
+        res = R.score_meta(**kw)
+        m = checker(res)
+        (ok if m is True else bad)(label if m is True else "%s：%s" % (label, m))
+
+    def it(res, iid):
+        for i in res["items"]:
+            if i["id"] == iid:
+                return i
+        return None
+
+    # 基线必须全绿，否则后面每一条靶标都说明不了问题
+    case("真实工具页做基线时 meta lane 判 PASS",
+         lambda r: True if r["verdict"] == "PASS" else "verdict=%s 失分=%s" % (
+             r["verdict"], r["below_floor"]))
+
+    case("缺 description 时 MG1 门槛未过，判 REJECT",
+         lambda r: True if (r["verdict"] == "REJECT" and "MG1" in r["failed_gates"])
+         else "verdict=%s gates=%s" % (r["verdict"], r["failed_gates"]),
+         description="")
+
+    case("title 落在 60 到 70 时 M1 掉一档到 2",
+         lambda r: True if it(r, "M1")["score"] == 2 else "M1=%s" % it(r, "M1")["score"],
+         title="Free AI Caption Generator: Social Media Captions in Seconds Today")
+
+    case("title 超过 70 时 M1 判 1，但仍不判 0",
+         lambda r: True if it(r, "M1")["score"] == 1 else "M1=%s" % it(r, "M1")["score"],
+         title="Free AI Caption Generator for Social Media Posts and Captions in Seconds Today")
+
+    case("title 里没有主词时 M3 判 0",
+         lambda r: True if it(r, "M3")["score"] == 0 else "M3=%s" % it(r, "M3")["score"],
+         title="The Ultimate Toolkit for Modern Social Teams Everywhere")
+
+    case("没给主词时 M3 记未观察，不折算成 0",
+         lambda r: True if it(r, "M3")["observed"] is False and it(r, "M3")["score"] is None
+         else "observed=%s score=%s" % (it(r, "M3")["observed"], it(r, "M3")["score"]),
+         keyword="")
+
+    case("description 复述 title 时 M4 判 0",
+         lambda r: True if it(r, "M4")["score"] == 0 else "M4=%s" % it(r, "M4")["score"],
+         description=("Free AI caption generator: social media captions in seconds, "
+                      "a free AI caption generator for social media captions."))
+
+    case("description 通篇形容词时 M5 判 0",
+         lambda r: True if it(r, "M5")["score"] == 0 else "M5=%s" % it(r, "M5")["score"],
+         description=("The most thoughtfully designed companion for modern teams who care "
+                      "about how their voice comes across, crafted with real attention."))
+
+    case("定价页不写价格与币种时 M6 判 0",
+         lambda r: True if it(r, "M6")["score"] == 0 else "M6=%s" % it(r, "M6")["score"],
+         page_type="pricing", keyword="pricing",
+         title="Pricing plans for every team size",
+         description=("Flexible plans designed to meet the needs of every team, "
+                      "whatever your size or stage of growth today."))
+
+    case("没给页型时 M6 记未观察，不折算成 0",
+         lambda r: True if it(r, "M6")["observed"] is False
+         else "observed=%s" % it(r, "M6")["observed"],
+         page_type=None)
+
+    case("只给一页时 M7 记未观察，不折算成 0",
+         lambda r: True if it(r, "M7")["observed"] is False
+         else "observed=%s" % it(r, "M7")["observed"])
+
+    case("title 与两页重复时 M7 判 0",
+         lambda r: True if it(r, "M7")["score"] == 0 else "M7=%s" % it(r, "M7")["score"],
+         peers=[{"url": "/a", "title": GOOD["title"], "description": "x"},
+                {"url": "/b", "title": GOOD["title"], "description": "y"}])
+
+    case("只有 description 重复时 M7 掉到 2，title 唯一不判 0",
+         lambda r: True if it(r, "M7")["score"] == 2 else "M7=%s" % it(r, "M7")["score"],
+         peers=[{"url": "/a", "title": "别的标题", "description": GOOD["description"]}])
+
+    case("meta lane 里营销腔由 C4 抓到",
+         lambda r: True if it(r, "C4")["score"] == 0 else "C4=%s" % it(r, "C4")["score"],
+         title="世界最强的 AI caption generator，业界领先",
+         description="全网最好用的一键搞定方案，遥遥领先，为您提供极致体验，最强体验。")
+
+    # 未观察不进分母：三项全未观察时，满分基数不应把它们算进去
+    r_all = R.score_meta(GOOD["title"], GOOD["description"], keyword="", page_type=None)
+    scored = [i for i in r_all["items"] if i["kind"] == "score" and i["observed"]]
+    expect_full = sum(3 * i["weight"] for i in scored)
+    if r_all["score"]["full"] == expect_full and len(r_all["unobserved"]) == 3:
+        ok("meta lane 未观察的 3 项不进分母")
+    else:
+        bad("meta lane 未观察项进了分母：full=%s 期望=%s 未观察=%d"
+            % (r_all["score"]["full"], expect_full, len(r_all["unobserved"])))
+
 if __name__ == "__main__":
     print("write lane 靶站：")
     for f in sorted(os.listdir(FIX)):
@@ -461,6 +561,9 @@ if __name__ == "__main__":
     for f in sorted(os.listdir(AFIX)):
         if f.endswith(".html"):
             run_audit_fixture(os.path.join(AFIX, f))
+
+    print("\nmeta lane 靶标：")
+    run_meta_cases()
 
     print("\naudit lane 站级靶标：")
     run_site_level_cases()

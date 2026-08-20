@@ -1,6 +1,6 @@
 # UPUP
 
-三个 Agent Skill，管你的产品上线之后**怎么被搜索引擎和 AI 找到**。
+四个 Agent Skill，管你的产品上线之后**怎么被搜索引擎和 AI 找到**。
 
 零安装、零付费、只用 python3 标准库。不装 npm，不开浏览器，不登录任何账号，不调任何 API。
 
@@ -13,7 +13,7 @@ UPUP 只管功能没问题之后，怎么让人和 AI 找得到你。
 
 - [它解决什么问题](#它解决什么问题)
 - [工作原理](#工作原理)
-- [三个 skill](#三个-skill)
+- [四个 skill](#四个-skill)
 - [安装](#安装)
 - [怎么用](#怎么用)
 - [输出怎么读](#输出怎么读)
@@ -186,19 +186,27 @@ UPUP 的做法：
 
 ---
 
-## 三个 skill
+## 四个 skill
 
 ```
 site-audit       查地基：sitemap / robots / canonical / 结构化数据，加正文可抽取性
       ↓
-rival-teardown   定该写什么：拆竞品，产出带出处的选题清单
-      ↓
-page-write       写出来：抓对照页当证据，写一段能被整段摘走的内容
+      ├─→ meta-write      核心功能页：给首页 / 工具页 / 定价页写标题和描述
+      │
+      └─→ rival-teardown  内容页：拆竞品，产出带出处的选题清单
+                ↓
+             page-write   写出来：抓对照页当证据，写一段能被整段摘走的内容
 ```
+
+**地基查完之后分两条路，做的是两类完全不同的页。**
+
+核心功能页（首页、工具页、定价页）建完基本不动，它们不负责拉新流量，负责把进来的人接住，
+真正要写好的就是搜索结果上那两行字。内容页反过来，流量的增量全靠它，写法看的是事实密度和证据链。
 
 | skill | 一句话 | 判据数 | 耗时 |
 |---|---|---|---|
 | `site-audit` | 给个网址，告诉你第一件该修什么 | 21 | 约 1 分钟 |
+| `meta-write` | 给核心功能页写标题和描述，写完判 9 项 | 9 | 约 30 秒 |
 | `rival-teardown` | 给两三个竞品，告诉你该写什么 | 不打分，出清单 | 2 到 4 分钟 |
 | `page-write` | 给个题目，替你写出草稿并跑机械闸 | 13 | 约 3 分钟 |
 
@@ -211,11 +219,12 @@ git clone git@github.com:ai798-Lab/UPUP.git ~/upup
 
 ln -s ~/upup/skills/_shared        ~/.claude/skills/_shared
 ln -s ~/upup/skills/site-audit     ~/.claude/skills/site-audit
+ln -s ~/upup/skills/meta-write     ~/.claude/skills/meta-write
 ln -s ~/upup/skills/rival-teardown ~/.claude/skills/rival-teardown
 ln -s ~/upup/skills/page-write     ~/.claude/skills/page-write
 ```
 
-**`_shared` 必须一起链。**三个 skill 共用那一份地基。只链其中一个的话，
+**`_shared` 必须一起链。**四个 skill 共用那一份地基。只链其中一个的话，
 跑起来会告诉你「找不到共享地基」并列出它找过哪些路径，不会甩一屏堆栈。
 
 不想用软链的话，设个环境变量也行：
@@ -275,14 +284,59 @@ python3 ~/upup/skills/site-audit/scripts/audit.py --compare runs/audit.json runs
 它**只对机器能验证的部分负责**，不承诺「AI 会不会引用你」。
 那件事没有可靠的免费测法，硬测出来的数字换个问法就变，也归不到你改的哪一行上。
 
-### 场景三：地基没问题了，要开始写内容
+### 场景三：核心功能页的标题和描述
 
-第一步，拆竞品定题目：
+先看现状。抓这一页当前那两行字，顺带把同组的几页一起给它，才能判出全站是不是每页都不一样：
+
+```bash
+python3 ~/upup/skills/meta-write/scripts/metagate.py \
+  --url https://你的域名/free-tools/caption-generator \
+  --page-type tool --keyword "caption generator" \
+  --peers https://你的域名/pricing,https://你的域名/free-tools/hashtag-generator
+```
+
+```
+verdict=PASS  分数=96.5%  页型=tool  主词=caption generator
+
+  ok  M3   主词在 title 前半     3/3   主词首次出现在 title 的第 13% 处
+  ok  M5   description 里有具体钩子 3/3   命中 2 类具体信息：免费程度、产出物或支持范围
+  ok  M7   同组唯一             3/3   title 与 0 页重复，description 与 0 页重复
+```
+
+`--page-type` 三选一：`home` / `tool` / `pricing`。**三种页型的用户带着完全不同的问题来**，
+定价页不写价格、工具页不写它能干什么，机械闸会在 M6 上直接判 0。不给页型的话那一项记未观察。
+
+改完之后把新写的那一对丢回去再判一次：
+
+```bash
+python3 ~/upup/skills/meta-write/scripts/metagate.py \
+  --title "你新写的标题" --description "你新写的描述" \
+  --page-type tool --keyword "caption generator"
+```
+
+怎么写在 [`skills/meta-write/references/playbook.md`](skills/meta-write/references/playbook.md)，
+三种页型各自必须回答什么、钩子写什么，都配了真实样例与实测字符数。
+
+### 场景四：不知道该写什么，先拆竞品
+
+**这一步单独拿出来说，因为它最容易被跳过。**选题错了，后面写得再好也是白写。
 
 ```bash
 python3 ~/upup/skills/rival-teardown/scripts/teardown.py "竞品甲.com,竞品乙.com" \
   --mine 你的域名 --json runs/teardown.json
 ```
+
+它抓每家 12 页的 sitemap 与页面，算出**他们靠哪些词系统性拿量、哪一页在吃这个词、那页凭什么吃得下**，
+再和你自己站做差集。产物是一份选题清单，每条挂着对方的页面地址和你现在缺的东西。
+
+**`--mine` 一定要带**，不带的话「你缺什么」那一栏是空的，清单就退化成一份竞品页面列表。
+
+它**不打分**，只出清单。原因是选题该不该做是商业判断，不是机械判据能替你答的：
+一个词竞品在做、你没做，可能是缝，也可能是他们试过发现不行。**机器给证据，你来拍板。**
+
+### 场景五：题目定了，开始写内容
+
+第一步，把上一步的选题清单接进来：
 
 ```
 拆了 2 家，抓到 12 页
@@ -292,8 +346,6 @@ python3 ~/upup/skills/rival-teardown/scripts/teardown.py "竞品甲.com,竞品�
       凭什么：写了 FAQ 结构化数据；写了步骤结构化数据
       你缺：你全站没有 FAQ 结构化数据；你全站没有对比表
 ```
-
-**`--mine` 一定要带**，不带的话「你缺什么」那一栏是空的。
 
 第二步，抓对照页，算出本次的通过线：
 
@@ -421,6 +473,27 @@ robots 按**四档**分别判，因为后果不是一回事：
 页面级 `<meta name="robots" content="noindex">`，
 响应头级 `X-Robots-Tag: noindex`（平台和框架的默认配置最常见）。
 
+### meta-write（9 项）
+
+| 组 | 项 |
+|---|---|
+| 门槛 | MG1 两样都写了（title 与 description 都在） |
+| 长度 | M1 title 长度 · M2 description 长度 |
+| 写法 | M3 主词在 title 前半 · M4 description 不复述 title · M5 有具体钩子 |
+| 页型 | M6 页型必答项（home 要品类与人群 · tool 要功能动词 · pricing 要价格与币种） |
+| 全站 | M7 同组唯一 |
+| 表达 | C4 无营销腔 |
+
+**长度的 60 与 155 是经验值，不是平台规则**，实际截断位随设备与查询词变。
+这一点在判据的 `evidence_level` 里标成 Heuristic，不冒充平台规定。
+
+### rival-teardown（不打分）
+
+它不产分数，产的是一份带出处的选题清单，所以判据全表里没有它。
+
+**这是有意的。**一个词竞品在做、你没做，可能是缝，也可能是他们试过发现不行。
+这个判断是商业判断，机械判据答不了。它只负责把证据摆出来：谁在做、哪一页在做、那页凭什么。
+
 ### page-write（13 项）
 
 | 组 | 项 |
@@ -487,21 +560,22 @@ robots 按**四档**分别判，因为后果不是一回事：
 upup/
 ├── README.md
 ├── skills/
-│   ├── _shared/                 三个 skill 共用，必须整个 skills/ 一起拷
+│   ├── _shared/                 四个 skill 共用，必须整个 skills/ 一起拷
 │   │   ├── fetch.py             取页面事实，含 ok/blocked/dead/unknown 四分类
 │   │   ├── robots.py            robots 取与最长匹配判定，四档 bot 分档
 │   │   ├── sitemap.py           sitemap 取、index 递归、抽样实测
-│   │   ├── rubric.json          33 项判据的单一真相源，每条带 source 与出处等级
+│   │   ├── rubric.json          41 项判据的单一真相源，每条带 source 与出处等级
 │   │   ├── rubric_check.py      机械分引擎，产出标 machine_locked
 │   │   ├── references.md        机制层台账，每条带核实日期与出处
 │   │   └── report.html          报告基底
 │   ├── site-audit/              查地基
+│   ├── meta-write/              核心功能页：写标题和描述
 │   ├── rival-teardown/          定该写什么
 │   └── page-write/              写出来
 ├── references/
 │   └── directories.md           免费收录名单，带核实日期
 ├── evals/
-│   ├── check.py                 24 份靶站 + 纪律回归
+│   ├── check.py                 靶站 + 纪律回归，三个 lane 全覆盖
 │   ├── check_index.py           文件索引与引用自检
 │   └── fixtures/                靶站，每份只犯一种错，从 baseline 派生
 └── examples/                    真跑产物

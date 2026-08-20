@@ -1,31 +1,45 @@
 # 免费收录入口名单
 
-> **本次核实日期 2026-08-20。**核实方式：对每个地址发一次普通 HTTP 请求，记录状态码。
+> **本次核实日期 2026-08-20。**核实方式两层：① 对每个地址发一次普通 HTTP 请求，记录状态码；
+> ② 用 SEMrush 取每个域名的 Authority Score、月自然流量、引荐域名三项，作为「值不值得」的证据。
 >
-> **这份名单只验证了「域名当天可达」，没有逐个走完提交流程，也没有验证提交后多久被收录。**
-> 判断值不值得做那一栏是编辑判断，不是实测排名。用之前知道这个边界。
+> **仍然没有验证的**：提交流程能不能走完、提交后多久被收录、收录之后能带来多少量。
+> 这三件事这份名单答不了，用之前知道这个边界。
 
 ## 怎么用
 
-从上往下做。**做完前两个再看后面的**，它们是唯二能给你真实数据的地方，其余都是单向提交。
+从上往下做。**做完前三个再看后面的**，它们是唯三能给你真实反馈的地方，其余都是单向提交。
 
 不要一天之内把十个都提交一遍。多数入口对「刚上线、内容为零」的站没有耐心，
 先有两三篇能站住的内容再去提交，通过率完全不同。
 
+## 三列数字怎么读
+
+| 列 | 是什么 | 怎么用 |
+|---|---|---|
+| **AS** | Authority Score，域名权重，0 到 100 | 40 以上算强，30 到 40 不错，20 以下基本没意义 |
+| **月自然流量** | 每月从搜索引擎来的访问量 | **这一列比 AS 更重要**，它代表真有人在用这个站 |
+| **引荐域名** | 有多少个不同的网站链了它 | 反映行业认可度。100 个站各链一次，比 1 个站链 100 次有价值得多 |
+
+**一句话判断标准：月自然流量低于 1K 的入口，提交价值接近零**，不管它 AS 多少。
+
 ## 名单
 
-| 入口 | 值不值得 | 状态 | 为什么 |
-|---|---|---|---|
-| [Google Search Console](https://search.google.com/search-console/about) | **必做** | 200 | 提交 sitemap，看真实收录与查询词。需要 Google 账号并验证域名所有权 |
-| [Bing Webmaster Tools](https://www.bing.com/webmasters/about) | **必做** | 200 | Bing 与 Copilot 侧的入口。可从 GSC 一键导入，省一次域名验证 |
-| [IndexNow](https://www.indexnow.org/) | 值得 | 200 | 推送新页地址给 Bing 与 Yandex。一个 HTTP 请求的事，不用注册 |
-| [AlternativeTo](https://alternativeto.net/) | 值得 | 403 | 对比型站点，被 AI 引用的频率不低。收录后你会出现在竞品的替代品列表里 |
-| [Product Hunt](https://www.producthunt.com/) | 值得 | 403 | 发布日流量集中，页面本身权重高。要挑日子、备素材，不是随手提交 |
-| [Hacker News](https://news.ycombinator.com/showhn.html) | 值得 | 200 | Show HN。成不成看运气与东西本身，成本只有一条链接 |
-| [Indie Hackers](https://www.indiehackers.com/) | 值得 | 200 | 同类人群密度高。适合长期发进展，不适合一次性提交完就走 |
-| [BetaList](https://betalist.com/) | 看情况 | 200 | 早期产品目录。免费排队慢，付费插队 |
-| [SaaSHub](https://www.saashub.com/) | 看情况 | 200 | 与 AlternativeTo 同类，体量小一些 |
-| [Awesome 类仓库](https://github.com/topics/awesome) | 看情况 | 200 | 找你所在领域的 awesome 列表提 PR。质量参差，挑维护活跃的 |
+| 入口 | 值不值得 | 状态 | AS | 月自然流量 | 引荐域名 | 为什么 |
+|---|---|---|---|---|---|---|
+| [Google Search Console](https://search.google.com/search-console/about) | **必做** | 200 | n/a | n/a | n/a | 提交 sitemap，看真实收录与查询词。它是搜索引擎本身，不是外链来源，三列数字不适用 |
+| [Bing Webmaster Tools](https://www.bing.com/webmasters/about) | **必做** | 200 | n/a | n/a | n/a | Bing 与 Copilot 侧的入口。可从 GSC 一键导入，省一次域名验证。同上，不是外链来源 |
+| [IndexNow](https://www.indexnow.org/) | 值得 | 200 | n/a | n/a | n/a | 推送新页地址给 Bing 与 Yandex。一个 HTTP 请求的事，不用注册 |
+| [Hacker News](https://news.ycombinator.com/showhn.html) | 值得 | 200 | **72** | **1.7M** | 129.4K | Show HN。**这份名单里体量最大的一个**。成不成看运气与东西本身，成本只有一条链接 |
+| [Product Hunt](https://www.producthunt.com/) | 值得 | 403 | 54 | 403.2K | **179.7K** | 引荐域名 17.9 万，是这里最高的。发布日流量集中。要挑日子、备素材，不是随手提交 |
+| [Indie Hackers](https://www.indiehackers.com/) | 值得 | 200 | 54 | 331.2K | 22.5K | 同类人群密度高。适合长期发进展，不适合一次性提交完就走 |
+| [AlternativeTo](https://alternativeto.net/) | 值得 | 403 | 53 | 306.8K | 36.8K | 对比型站点，被 AI 引用的频率不低。收录后你会出现在竞品的替代品列表里。**没有开放表单，要注册后在后台添加** |
+| [BetaList](https://betalist.com/) | 看情况 | 200 | 41 | 27K | 7.9K | 早期产品目录，正好收刚上线的。免费排队慢，付费插队 |
+| [SaaSHub](https://www.saashub.com/) | 看情况 | 200 | 40 | 19.9K | 13K | 与 AlternativeTo 同类，流量小一个量级，但引荐域名 13K 不低 |
+| [Awesome 类仓库](https://github.com/topics/awesome) | 看情况 | 200 | n/a | n/a | n/a | 找你所在领域的 awesome 列表提 PR。质量参差，挑维护活跃的。数字取的是 GitHub 主域，对单个仓库没有参考价值，故不列 |
+
+**排序按月自然流量，不按名气。**这一版把 Hacker News 从原来的第六位提到了第四位：
+它的月自然流量是 Product Hunt 的四倍，而成本只是发一条链接。
 
 ## 那两个 403 是什么意思
 
@@ -44,7 +58,9 @@ site-audit 遇到 403 时给的动作是「去 CDN 放行 UA」，不是「查�
 
 ## 复核
 
-这份名单会过期。重新核一遍很便宜：
+这份名单会过期。**两层都要重核，别只核状态码。**
+
+状态码很便宜：
 
 ```bash
 python3 -c "
@@ -56,3 +72,10 @@ for u in ['https://search.google.com/search-console/about',
     p = F.fetch(u, timeout=20); print(p['status'], p['reach'], u)
 "
 ```
+
+**三列数字要人工重取**，UPUP 不做这件事：它们来自 SEMrush 这类付费工具，
+本套件承诺零付费，不会为了这三个数字去接一个要钱的 API。
+没有账号的话，把这三列当成上一次核实时的快照读，别当成当前值。
+
+**状态码没变不等于名单还有效。**本次核实就撞到过反例：一个站页面照常打开，
+月自然流量却是 0。只核状态码的话，这种站会一直躺在名单里骗人。
